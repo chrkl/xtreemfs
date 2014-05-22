@@ -11,9 +11,9 @@ package org.xtreemfs.mrc.database.babudb;
 import org.xtreemfs.foundation.logging.Logging;
 import org.xtreemfs.mrc.database.AtomicDBUpdate;
 import org.xtreemfs.mrc.database.DatabaseException;
+import org.xtreemfs.mrc.database.DatabaseException.ExceptionType;
 import org.xtreemfs.mrc.database.StorageManager;
 import org.xtreemfs.mrc.database.VolumeInfo;
-import org.xtreemfs.mrc.database.DatabaseException.ExceptionType;
 import org.xtreemfs.mrc.utils.Converter;
 
 /**
@@ -37,7 +37,7 @@ public class BabuDBVolumeInfo implements VolumeInfo {
     private short                acPolicy;
     
     private boolean              allowSnaps;
-    
+
     public void init(BabuDBStorageManager sMan, String id, String name, short[] osdPolicy, short[] replicaPolicy,
             short acPolicy, boolean allowSnaps, AtomicDBUpdate update) throws DatabaseException {
         
@@ -104,7 +104,7 @@ public class BabuDBVolumeInfo implements VolumeInfo {
             
             if (allowSnapsAttr != null)
                 allowSnaps = "true".equalsIgnoreCase(new String(allowSnapsAttr));
-            
+
         } catch (NumberFormatException exc) {
             Logging.logError(Logging.LEVEL_ERROR, this, exc);
             throw new DatabaseException("corrupted MRC database", ExceptionType.INTERNAL_DB_ERROR);
@@ -137,6 +137,11 @@ public class BabuDBVolumeInfo implements VolumeInfo {
     }
     
     @Override
+    public long getVolumeQuota() throws DatabaseException {
+        return sMan.getVolumeQuota();
+    }
+
+    @Override
     public void setOsdPolicy(short[] osdPolicy, AtomicDBUpdate update) throws DatabaseException {
         this.osdPolicy = osdPolicy;
         sMan.setXAttr(1, StorageManager.SYSTEM_UID, BabuDBStorageManager.OSD_POL_ATTR_NAME, Converter
@@ -160,6 +165,13 @@ public class BabuDBVolumeInfo implements VolumeInfo {
         sMan.notifyVolumeChange(this);
     }
     
+    @Override
+    public void setVolumeQuota(long quota, AtomicDBUpdate update) throws DatabaseException {
+        sMan.setXAttr(1, StorageManager.SYSTEM_UID, BabuDBStorageManager.VOL_QUOTA, String.valueOf(quota).getBytes(),
+                update);
+        sMan.notifyVolumeChange(this);
+    }
+
     @Override
     public void updateVolumeSize(long diff, AtomicDBUpdate update) throws DatabaseException {
         sMan.updateVolumeSize(diff, update);
@@ -194,5 +206,4 @@ public class BabuDBVolumeInfo implements VolumeInfo {
     public long getCreationTime() throws DatabaseException {
         return 0;
     }
-    
 }
